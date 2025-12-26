@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "130922396490",
+    "firebase_url": "https://webtrc-d5e97-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "webtrc-d5e97",
+    "storage_bucket": "webtrc-d5e97.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:130922396490:android:11494ad943b918a725dfb3",
+        "android_client_info": {
+          "package_name": "com.example.vdocallwebtrctesting"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAlbveR4MZhp8ZfGd_T_RLXHEMq_5MQq0k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
