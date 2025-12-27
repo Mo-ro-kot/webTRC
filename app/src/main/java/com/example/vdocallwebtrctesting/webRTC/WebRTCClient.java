@@ -29,11 +29,13 @@ import java.util.List;
 
 public class WebRTCClient {
 
-    private final Context context;
     private final Gson gson = new Gson();
+    private final Context context;
     private final String username;
+    private EglBase.Context eglBaseContext= EglBase.create().getEglBaseContext();
     private PeerConnectionFactory peerConnectionFactory;
     private PeerConnection peerConnection;
+    private List<PeerConnection.IceServer> iceServer = new ArrayList<>();
     private CameraVideoCapturer videoCapturer;
     private VideoSource localVideoSource;
     private AudioSource localAudioSource;
@@ -41,36 +43,27 @@ public class WebRTCClient {
     private String localStreamId = "local_stream";
     private VideoTrack localVideoTrack;
     private AudioTrack localAudioTrack;
-
     private MediaStream localStream;
-    private MediaConstraints  mediaConstraints= new MediaConstraints();
+    private MediaConstraints mediaConstraints = new MediaConstraints();
+
     public Listener listener;
-    private List<PeerConnection.IceServer> iceServer = new ArrayList<>();
-    private EglBase.Context eglBaseContext = EglBase.create().getEglBaseContext();
 
     public WebRTCClient(Context context, PeerConnection.Observer observer, String username) {
-        //constractor
         this.context = context;
         this.username = username;
         initPeerConnectionFactory();
         peerConnectionFactory = createPeerConnectionFactory();
-        //add configuration to ice server
         iceServer.add(PeerConnection.IceServer.builder("stun:stun1.l.google.com:19302").createIceServer());
         iceServer.add(PeerConnection.IceServer.builder("stun:stun2.l.google.com:19302").createIceServer());
         peerConnection = createPeerConnection(observer);
         localVideoSource = peerConnectionFactory.createVideoSource(false);
         localAudioSource = peerConnectionFactory.createAudioSource(new MediaConstraints());
-        mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("offerToRecievedVideo", "true"));
-
+        mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo","true"));
     }
 
-    // ini peer connection section
+    //initializing peer connection section
     private void initPeerConnectionFactory() {
-        PeerConnectionFactory.InitializationOptions options =
-                PeerConnectionFactory.InitializationOptions.builder(context)
-                        .setFieldTrials("WebTRC-H264HighProfile/Enabled/")
-                        .setEnableInternalTracer(true).createInitializationOptions();
-
+        PeerConnectionFactory.InitializationOptions options = PeerConnectionFactory.InitializationOptions.builder(context).setFieldTrials("WebRTC-H264HighProfile/Enabled/").setEnableInternalTracer(true).createInitializationOptions();
         PeerConnectionFactory.initialize(options);
     }
 
@@ -79,128 +72,118 @@ public class WebRTCClient {
         options.disableEncryption = false;
         options.disableNetworkMonitor = false;
         return PeerConnectionFactory.builder()
-                .setVideoEncoderFactory(new DefaultVideoEncoderFactory(eglBaseContext, true, true))
+                .setVideoEncoderFactory(new DefaultVideoEncoderFactory(eglBaseContext,true,true))
                 .setVideoDecoderFactory(new DefaultVideoDecoderFactory(eglBaseContext))
                 .setOptions(options).createPeerConnectionFactory();
-
     }
 
-    private PeerConnection createPeerConnection(PeerConnection.Observer observer) {
-        return peerConnectionFactory.createPeerConnection(iceServer, observer);
+    private PeerConnection createPeerConnection(PeerConnection.Observer observer){
+        return peerConnectionFactory.createPeerConnection(iceServer,observer);
     }
 
-// innit ui like surface view renders
+    //initilizing ui like surface view renderers
 
-    public void initSurfaceViewRendered(SurfaceViewRenderer viewRenderer) {
-        //It initializes the video view so WebRTC can draw video frames on it.
+    public void initSurfaceViewRendere(SurfaceViewRenderer viewRenderer){
         viewRenderer.setEnableHardwareScaler(true);
         viewRenderer.setMirror(true);
-        viewRenderer.init(eglBaseContext, null);
-
+        viewRenderer.init(eglBaseContext,null);
     }
-    //vdo view your own camera feed
-   public  void initLocalSurfaceView(SurfaceViewRenderer view){
-    initSurfaceViewRendered(view);
-    startLocalvideoStreaming(view);
-   }
-// staart the local stream and prepare to start the vdo
-    private void startLocalvideoStreaming(SurfaceViewRenderer view) {
-        SurfaceTextureHelper helper = SurfaceTextureHelper.create(
+
+    public void initLocalSurfaceView(SurfaceViewRenderer view){
+        initSurfaceViewRendere(view);
+        startLocalVideoStreaming(view);
+    }
+
+    private void startLocalVideoStreaming(SurfaceViewRenderer view) {
+        SurfaceTextureHelper helper= SurfaceTextureHelper.create(
                 Thread.currentThread().getName(), eglBaseContext
         );
 
-        //for video
         videoCapturer = getVideoCapturer();
-        videoCapturer.initialize(helper, context, localVideoSource.getCapturerObserver());
-        videoCapturer.startCapture(480, 360,15);
+        videoCapturer.initialize(helper,context,localVideoSource.getCapturerObserver());
+        videoCapturer.startCapture(480,360,15);
         localVideoTrack = peerConnectionFactory.createVideoTrack(
-                localTrackId+ "video", localVideoSource
+                localTrackId+"_video",localVideoSource
         );
         localVideoTrack.addSink(view);
 
-        // for audio
-        localAudioTrack = peerConnectionFactory.createAudioTrack(localTrackId+"audio", localAudioSource);
+        localAudioTrack = peerConnectionFactory.createAudioTrack(localTrackId+"_audio",localAudioSource);
         localStream = peerConnectionFactory.createLocalMediaStream(localStreamId);
         localStream.addTrack(localVideoTrack);
         localStream.addTrack(localAudioTrack);
         peerConnection.addStream(localStream);
-
     }
-    // to start streaming we capture our vdo and then send it to other peer
-    private CameraVideoCapturer getVideoCapturer(){
+
+    private CameraVideoCapturer getVideoCapturer() {
         Camera2Enumerator enumerator = new Camera2Enumerator(context);
 
         String[] deviceNames = enumerator.getDeviceNames();
+
         for (String device: deviceNames){
             if (enumerator.isFrontFacing(device)){
-                return enumerator.createCapturer(device, null);
+                return enumerator.createCapturer(device,null);
             }
         }
-        throw new IllegalStateException("front camera is not found");
+        throw new IllegalStateException("front facing camera not found");
     }
 
-    //vdo view from the other device
-   public  void initRemoteSurfaceView(SurfaceViewRenderer view){
-        initSurfaceViewRendered(view);
-   }
+    public void initRemoteSurfaceView(SurfaceViewRenderer view){
+        initSurfaceViewRendere(view);
+    }
 
-   // neogotiation section liek call and answer
+    //negotiation section like call and answer
     public void call(String target){
-        try {
-            peerConnection.createOffer(new MYSdpObserver(){
+        try{
+            peerConnection.createOffer(new MySdpObserver(){
                 @Override
                 public void onCreateSuccess(SessionDescription sessionDescription) {
                     super.onCreateSuccess(sessionDescription);
-                    peerConnection.setLocalDescription( new MYSdpObserver(){
+                    peerConnection.setLocalDescription(new MySdpObserver(){
                         @Override
                         public void onSetSuccess() {
                             super.onSetSuccess();
-// time to tranfoer this sdp to other peer
-                            if (listener != null){
-                                listener.onTransferDatatoOtherPeer(new DataModel(
-                                        target, username,sessionDescription.description, DataModelType.Offer
+                            //its time to transfer this sdp to other peer
+                            if (listener!=null){
+                                listener.onTransferDataToOtherPeer(new DataModel(
+                                        target,username,sessionDescription.description, DataModelType.Offer
                                 ));
                             }
                         }
-                    }, sessionDescription);
+                    },sessionDescription);
                 }
-            }, mediaConstraints);
-
+            },mediaConstraints);
         }catch (Exception e){
             e.printStackTrace();
         }
     }
 
-    // for anser call
     public void answer(String target){
-        try {
-            peerConnection.createAnswer(new MYSdpObserver(){
+        try{
+            peerConnection.createAnswer(new MySdpObserver(){
                 @Override
                 public void onCreateSuccess(SessionDescription sessionDescription) {
                     super.onCreateSuccess(sessionDescription);
-                    peerConnection.setLocalDescription( new MYSdpObserver(){
+                    peerConnection.setLocalDescription(new MySdpObserver(){
                         @Override
                         public void onSetSuccess() {
                             super.onSetSuccess();
-// time to tranfoer this sdp to other peer
-                            if (listener != null){
-                                listener.onTransferDatatoOtherPeer(new DataModel(
-                                        target, username,sessionDescription.description, DataModelType.Answer
+                            //its time to transfer this sdp to other peer
+                            if (listener!=null){
+                                listener.onTransferDataToOtherPeer(new DataModel(
+                                        target,username,sessionDescription.description, DataModelType.Answer
                                 ));
                             }
                         }
-                    }, sessionDescription);
+                    },sessionDescription);
                 }
-            }, mediaConstraints);
-
+            },mediaConstraints);
         }catch (Exception e){
             e.printStackTrace();
         }
     }
 
-    public void onRemoteSessionRecieved(SessionDescription sessionDescription){
-        peerConnection.setRemoteDescription(new MYSdpObserver(),sessionDescription);
-
+    public void onRemoteSessionReceived(SessionDescription sessionDescription){
+        peerConnection.setRemoteDescription(new MySdpObserver(),sessionDescription);
     }
 
     public void addIceCandidate(IceCandidate iceCandidate){
@@ -210,25 +193,27 @@ public class WebRTCClient {
     public void sendIceCandidate(IceCandidate iceCandidate, String target){
         addIceCandidate(iceCandidate);
         if (listener!=null){
-            listener.onTransferDatatoOtherPeer(new DataModel(
+            listener.onTransferDataToOtherPeer(new DataModel(
                     target,username,gson.toJson(iceCandidate),DataModelType.IceCandidate
             ));
         }
-
     }
-    //helper fucntion
-    public void switchCamera(){
+
+    public void switchCamera() {
         videoCapturer.switchCamera(null);
     }
-    public void toggleVideo(boolean shouldBeMuted){
-         localVideoTrack.setEnabled(shouldBeMuted);
-    }
-    public void toggleAudio(boolean shouldBeMuted){
-        localAudioTrack.setEnabled(shouldBeMuted);
 
+    public void toggleVideo(Boolean shouldBeMuted){
+        localVideoTrack.setEnabled(shouldBeMuted);
     }
-    public void closeConnectio(){
+
+    public void toggleAudio(Boolean shouldBeMuted){
+        localAudioTrack.setEnabled(shouldBeMuted);
+    }
+
+    public void closeConnection(){
         try{
+
             localVideoTrack.dispose();
             videoCapturer.stopCapture();
             videoCapturer.dispose();
@@ -236,10 +221,9 @@ public class WebRTCClient {
         }catch (Exception e){
             e.printStackTrace();
         }
-
     }
-   public interface Listener{
-        void onTransferDatatoOtherPeer(DataModel model);
-   }
 
+    public interface Listener {
+        void onTransferDataToOtherPeer(DataModel model);
+    }
 }

@@ -6,9 +6,9 @@ public class DataModel {
     private String data;
     private DataModelType type;
 
-    public DataModel(String sender, String target, String data, DataModelType type) {
-        this.sender = sender;
+    public DataModel(String target, String sender, String data, DataModelType type) {
         this.target = target;
+        this.sender = sender;
         this.data = data;
         this.type = type;
     }

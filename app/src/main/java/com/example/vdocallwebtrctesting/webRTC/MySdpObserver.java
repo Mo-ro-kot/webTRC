@@ -3,7 +3,7 @@ package com.example.vdocallwebtrctesting.webRTC;
 import org.webrtc.SdpObserver;
 import org.webrtc.SessionDescription;
 
-public class MYSdpObserver implements SdpObserver {
+public class MySdpObserver implements SdpObserver {
     @Override
     public void onCreateSuccess(SessionDescription sessionDescription) {
 
