@@ -2,6 +2,10 @@ package com.example.vdocallwebtrctesting.webRTC;
 
 import android.content.Context;
 
+import com.example.vdocallwebtrctesting.utils.DataModel;
+import com.example.vdocallwebtrctesting.utils.DataModelType;
+import com.google.gson.Gson;
+
 import org.webrtc.AudioSource;
 import org.webrtc.AudioTrack;
 import org.webrtc.Camera1Enumerator;
@@ -10,10 +14,12 @@ import org.webrtc.CameraVideoCapturer;
 import org.webrtc.DefaultVideoDecoderFactory;
 import org.webrtc.DefaultVideoEncoderFactory;
 import org.webrtc.EglBase;
+import org.webrtc.IceCandidate;
 import org.webrtc.MediaConstraints;
 import org.webrtc.MediaStream;
 import org.webrtc.PeerConnection;
 import org.webrtc.PeerConnectionFactory;
+import org.webrtc.SessionDescription;
 import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoSource;
@@ -23,7 +29,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WebTRCClient {
+
     private final Context context;
+    private final Gson gson = new Gson();
     private final String username;
     private PeerConnectionFactory peerConnectionFactory;
     private PeerConnection peerConnection;
@@ -36,10 +44,13 @@ public class WebTRCClient {
     private AudioTrack localAudioTrack;
 
     private MediaStream localStream;
+    private MediaConstraints  mediaConstraints= new MediaConstraints();
+    public Listener listener;
     private List<PeerConnection.IceServer> iceServer = new ArrayList<>();
     private EglBase.Context eglBaseContext = EglBase.create().getEglBaseContext();
 
     public WebTRCClient(Context context, PeerConnection.Observer observer, String username) {
+        //constractor
         this.context = context;
         this.username = username;
         initPeerConnectionFactory();
@@ -50,6 +61,7 @@ public class WebTRCClient {
         peerConnection = createPeerConnection(observer);
         localVideoSource = peerConnectionFactory.createVideoSource(false);
         localAudioSource = peerConnectionFactory.createAudioSource(new MediaConstraints());
+        mediaConstraints.mandatory.add(new MediaConstraints.KeyValuePair("offerToRecievedVideo", "true"));
 
     }
 
@@ -131,6 +143,104 @@ public class WebTRCClient {
     //vdo view from the other device
    public  void initRemoteSurfaceView(SurfaceViewRenderer view){
         initSurfaceViewRendered(view);
+   }
+
+   // neogotiation section liek call and answer
+    public void call(String target){
+        try {
+            peerConnection.createOffer(new MYSdpObserver(){
+                @Override
+                public void onCreateSuccess(SessionDescription sessionDescription) {
+                    super.onCreateSuccess(sessionDescription);
+                    peerConnection.setLocalDescription( new MYSdpObserver(){
+                        @Override
+                        public void onSetSuccess() {
+                            super.onSetSuccess();
+// time to tranfoer this sdp to other peer
+                            if (listener != null){
+                                listener.onTransferDatatoOtherPeer(new DataModel(
+                                        target, username,sessionDescription.description, DataModelType.Offer
+                                ));
+                            }
+                        }
+                    }, sessionDescription);
+                }
+            }, mediaConstraints);
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    // for anser call
+    public void answer(String target){
+        try {
+            peerConnection.createAnswer(new MYSdpObserver(){
+                @Override
+                public void onCreateSuccess(SessionDescription sessionDescription) {
+                    super.onCreateSuccess(sessionDescription);
+                    peerConnection.setLocalDescription( new MYSdpObserver(){
+                        @Override
+                        public void onSetSuccess() {
+                            super.onSetSuccess();
+// time to tranfoer this sdp to other peer
+                            if (listener != null){
+                                listener.onTransferDatatoOtherPeer(new DataModel(
+                                        target, username,sessionDescription.description, DataModelType.Answer
+                                ));
+                            }
+                        }
+                    }, sessionDescription);
+                }
+            }, mediaConstraints);
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public void onRemoteSessionRecieved(SessionDescription sessionDescription){
+        peerConnection.setRemoteDescription(new MYSdpObserver(),sessionDescription);
+
+    }
+
+    public void addIceCandidate(IceCandidate iceCandidate){
+        peerConnection.addIceCandidate(iceCandidate);
+    }
+
+    public void sendIceCandidate(IceCandidate iceCandidate, String target){
+        addIceCandidate(iceCandidate);
+        if (listener!=null){
+            listener.onTransferDatatoOtherPeer(new DataModel(
+                    target,username,gson.toJson(iceCandidate),DataModelType.IceCandidate
+            ));
+        }
+
+    }
+    //helper fucntion
+    public void switchCamera(){
+        videoCapturer.switchCamera(null);
+    }
+    public void toggleVideo(boolean shouldBeMuted){
+         localVideoTrack.setEnabled(shouldBeMuted);
+    }
+    public void toggleAudio(boolean shouldBeMuted){
+        localAudioTrack.setEnabled(shouldBeMuted);
+
+    }
+    public void closeConnectio(){
+        try{
+            localVideoTrack.dispose();
+            videoCapturer.stopCapture();
+            videoCapturer.dispose();
+            peerConnection.close();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
+   interface Listener{
+        void onTransferDatatoOtherPeer(DataModel model);
    }
 
 }
