@@ -8,7 +8,6 @@ import com.google.gson.Gson;
 
 import org.webrtc.AudioSource;
 import org.webrtc.AudioTrack;
-import org.webrtc.Camera1Enumerator;
 import org.webrtc.Camera2Enumerator;
 import org.webrtc.CameraVideoCapturer;
 import org.webrtc.DefaultVideoDecoderFactory;
@@ -28,7 +27,7 @@ import org.webrtc.VideoTrack;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WebTRCClient {
+public class WebRTCClient {
 
     private final Context context;
     private final Gson gson = new Gson();
@@ -49,7 +48,7 @@ public class WebTRCClient {
     private List<PeerConnection.IceServer> iceServer = new ArrayList<>();
     private EglBase.Context eglBaseContext = EglBase.create().getEglBaseContext();
 
-    public WebTRCClient(Context context, PeerConnection.Observer observer, String username) {
+    public WebRTCClient(Context context, PeerConnection.Observer observer, String username) {
         //constractor
         this.context = context;
         this.username = username;
@@ -239,7 +238,7 @@ public class WebTRCClient {
         }
 
     }
-   interface Listener{
+   public interface Listener{
         void onTransferDatatoOtherPeer(DataModel model);
    }
 

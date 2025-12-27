@@ -9,4 +9,5 @@
     <string name="image">image</string>
     <string name="mute_unmute_mic" />
     <string name="switch_camera" />
+    <string name="video_button">video button</string>
 </resources>

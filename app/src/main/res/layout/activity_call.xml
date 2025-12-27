@@ -24,7 +24,6 @@
             android:id="@+id/incomingNameTV"/>
 
         <ImageView
-            android:contentDescription="@string/accpet_button"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1.5"
@@ -32,7 +31,6 @@
             android:padding="15dp"
             android:id="@+id/acceptButton"/>
         <ImageView
-            android:contentDescription="@string/reject_button"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1.5"
@@ -95,51 +93,50 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
             <ImageView
-                android:contentDescription="@string/mute_unmute_mic"
                 android:id="@+id/mic_button"
-                android:layout_width="50dp"
-                android:layout_height="100dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_margin="16dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="12dp"
                 android:background="@drawable/circle_background"
                 app:backgroundTint="@color/cardview_dark_background"
-                />
+                app:srcCompat="@drawable/ic_baseline_mic_off_24" />
             <ImageView
-                android:contentDescription="@string/image"
+                android:contentDescription="@string/video_button"
                 android:id="@+id/video_button"
-                android:layout_width="50dp"
-                android:layout_height="60dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_margin="16dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="12dp"
                 android:background="@drawable/circle_background"
-                app:backgroundTint="@color/cardview_dark_background" />
+                app:backgroundTint="@color/cardview_dark_background"
+                app:srcCompat="@drawable/ic_baseline_videocam_off_24" />
             <ImageView
                 android:id="@+id/end_call_button"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_margin="16dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="12dp"
                 android:background="@drawable/circle_background"
                 app:backgroundTint="@android:color/holo_red_dark"
-                />
+                app:srcCompat="@drawable/ic_baseline_call_end_24" />
             <ImageView
-                android:contentDescription="@string/switch_camera"
                 android:id="@+id/switch_camera_button"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_margin="16dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="12dp"
                 android:background="@drawable/circle_background"
                 app:backgroundTint="@color/cardview_dark_background"
-                />
+                app:srcCompat="@drawable/ic_baseline_cameraswitch_24" />
         </LinearLayout>
 
     </RelativeLayout>
